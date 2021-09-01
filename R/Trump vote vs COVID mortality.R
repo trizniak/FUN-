@@ -1,12 +1,12 @@
 
-# ---- *** Trump vote vs COVID mortality *** ----
+# ====== Trump vote vs COVID mortality ======
 
 # ---- Inspiration ----
 # https://twitter.com/_cingraham/status/1432733716632137731
 # https://thewhyaxis.substack.com/p/gop-covid-policy-is-killing-gop-voters
 
 # ---- SETUP ----
-source("./SETUP.R")
+source("./R/SETUP.R")
 
 # ---- DATA ----
 data.TrumpVoteCOVID =
