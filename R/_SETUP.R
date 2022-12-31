@@ -1,14 +1,19 @@
 
-# ---- SETUP ----
+# ==== SETUP ====
+# #### ~~~~~ ####
 
-# Code appearance ([Tools] [Global Options] [Appearance]) : Tomorrow Night Blue
+.connect2internet("OrizaT",
+                  method="libcurl")
+
+# ~~~ OPTIONS ~~~ ####
+# ... Code appearance ([Tools] [Global Options] [Appearance]) : Tomorrow Night Blue
 
 options(repr.plot.width=49,
         repr.plot.height=36,
         scipen=999,
-        digits=2,
-        warn=-1)
-my.color="#273749" # 214263 0B4279 0b2131 1b3142
+        digits=1,
+        warn=-1,
+        dplyr.summarise.inform=FALSE) # suppress additional info
 
 
 # ---- PACKAGES ----
@@ -61,72 +66,130 @@ pacman::p_load(
   webshot,        	#[VIZ]		https://cran.r-project.org/web/packages/webshot/index.html
   tidyverse	#[.KEY]]	https://cran.r-project.org/web/packages/tidyverse/index.html
 )
-#webshot::install_phantomjs(force=FALSE)
-#remotes::install_github("clauswilke/sinab")
-library(sinab)
+
+# ... Necessary on business machine ¯\_(ツ)_/¯ ####
+library(dplyr)
+library(tibble)
 
 
-# ---- FONTS ----
+# ~~~ FONTS ~~~ ####
 pacman::p_load(extrafont)
 #extrafont::font_import(prompt=FALSE)
+grDevices::windowsFonts(KLB=grDevices::windowsFont("Calibri"))
 
 
-# ---- THEME ----
+# ~~~ COLOR PALETTES ~~~ ####
+
+palette.personal = c(main.dark="#273749",
+                     main.medium="#446699",
+                     main.light="#a1b3c9")
+
+
+# ~~~ THEME ~~~ ####
 my.theme = function() {
-  theme_minimal() +
-    theme(text=element_text(family="Calibri",
-                            color=my.color),
-          axis.line.x.bottom=element_line(color="grey",
-                                          size=.3),	# set as element_blank to remove : axis.line is ignored
-          axis.line.y.left=element_line(color="grey",
-                                        size=.3),	# set as element_blank to remove : axis.line is ignored
-          axis.text=element_blank(),
-          axis.ticks=element_blank(),
-          axis.title=element_text(face="italic"),
-          legend.title=element_blank(),
-          panel.background=element_blank(),
-          panel.border=element_rect(size=0.1,
-                                    color="grey",
-                                    fill=NA),
-          panel.grid=element_blank(),
-          panel.spacing=unit(0.1,"lines"),
-          plot.title=element_markdown(size=26),
-          plot.title.position="plot",
-          plot.subtitle=element_markdown(),
-          strip.background=element_blank(),
-          strip.placement="outside",
-          strip.text=element_text(color=my.color,
-                                  face="italic"))
+  ggplot2::theme_minimal() +
+    ggplot2::theme(text=element_text(family="KLB",
+                                     color=palette.personal["main.dark"]),
+                   axis.line.x.bottom=element_line(color=palette.personal["main.light"],
+                                                   size=.3),	# set as element_blank to remove : axis.line is ignored
+                   axis.line.y.left=element_line(color=palette.personal["main.light"],
+                                                 size=.3),	# set as element_blank to remove : axis.line is ignored
+                   axis.text=element_blank(),
+                   axis.ticks=element_blank(),
+                   axis.title=element_text(face="italic"),
+                   legend.title=element_blank(),
+                   panel.background=element_blank(),
+                   panel.border=element_rect(size=0.1,
+                                             color=palette.personal["main.light"],
+                                             fill=NA),
+                   panel.grid=element_blank(),
+                   panel.spacing=unit(0.1,"lines"),
+                   plot.title=element_markdown(),
+                   plot.title.position="plot",
+                   plot.subtitle=element_markdown(),
+                   strip.background=element_blank(),
+                   strip.placement="outside",
+                   strip.text=element_text(color=palette.personal["main.dark"],
+                                           face="italic"))
 }
 
-theme_set(my.theme())
+ggplot2::theme_set(my.theme())
 
 
-# ---- AUXILIARY FUNS ----
+# ~~~ LABELS ~~~ ####
 
-# * FUN : Label Color ----
+
+# ~~~ AUX FUNS ~~~ ####
+
+# * FUN : TIMING + MESSAGE ####
+f.timing = function (.start=section.start,
+                     .message,
+                     .sep.rows=1) {
+  cat(sep="\n",
+      paste0(rep("\n",.sep.rows) %>%
+               paste(collapse=""),
+             .message,
+             lubridate::int_diff(c(.start,
+                                   Sys.time())) %>%
+               lubridate::int_length() %>%
+               round() %>%
+               lubridate::seconds_to_period(),
+             rep("\n",.sep.rows) %>%
+               paste(collapse="")))
+}
+
+# * FUN : Label Color ####
 f.label.color = function(x,
-                         sign=FALSE,
-                         fontface="bold",
-                         color.negative="red",
-                         color.neutral="grey",
-                         color.pozitive="green4") {
-  paste0({if (fontface=="bold") "<b>" else ""},
-         "<span style='color:",
-         case_when(x<0~color.negative,
-                   x>0~color.pozitive,
-                   TRUE~color.neutral),
-         "'>",
-         #{if(sign & x>0) "+" else ""},
-         x,"</span>",
-         {if (fontface=="bold") "</b>" else ""})}
+                         color.negative="red", # palette.ESTAT["red.3"]
+                         color.neutral="lightgrey", # palette.ESTAT["teal.3"]
+                         color.pozitive="green4") { # palette.ESTAT["green.3"]
+  paste0("<b><span style='color:",
+         dplyr::case_when(x<0~color.negative,
+                          x>0~color.pozitive,
+                          TRUE~color.neutral),
+         "'>",x,"</span>")}
 # scale_y_continuous(labels=function (X) f.label.color(X,"midnightblue","#273749","magenta") / labels=f.label.color)
 
-# ---- FUN : Pretty Rounding ----
-f.pretty.round = function (x,step=5) {
-  E=ifelse(x==0,0,floor(log10(abs(x))-1))
+# * FUN : Pretty Rounding ####
+f.pretty.round = function (x,
+                           step=5) {
+  E=ifelse(x==0,0,
+           floor(log10(abs(x))-1))
   F=x/10^E
   step*ceiling(F/step)*10^E
+}
+
+# FUN : Percentage rounding to 0.5, and dropping trailing zeros ####
+f.pct.round = function(x,
+                       step=5) {
+  paste0(prettyNum(step*round(x/step,1),
+                   digits=2,
+                   format="g"),
+         "%")
+}
+
+# * FUN : Get Eurostat data ####
+# https://stackoverflow.com/questions/59796178/r-curlhas-internet-false-even-though-there-are-internet-connection
+f.data.estat = function(.filename,
+                        .lag=0,
+                        .filter=FALSE) {
+  # http://appsso.eurostat.ec.europa.eu/nui/show.do?dataset=ilc_di01&lang=en
+  eurostat::get_eurostat(.filename,
+                         time_format="num",
+                         keepFlags=TRUE) %>%
+    dplyr::rename(COUNTRY=geo,
+                  YEAR=time,
+                  level=values) %>%
+    {if (.filter)
+      dplyr::filter(COUNTRY %in% names(country.list),
+                    YEAR>=2005,
+                    !is.na(level))
+      else .} %>%
+    dplyr::mutate(YEAR=YEAR-.lag,
+                  d.break=replace_na(str_detect(tolower(flags),"b"),FALSE),
+                  d.estimate=replace_na(str_detect(tolower(flags),"e"),FALSE),
+                  d.provisional=replace_na(str_detect(tolower(flags),"p"),FALSE),
+                  COUNTRY=as.character(COUNTRY))
 }
 
 # ---- FUN : element_html ----
@@ -173,34 +236,7 @@ element_grob.element_html <- function(element, label = "", x = NULL, y = NULL,
   )
 }
 
-# ---- COLOR PALETTE ----
 
-color.palette.CC = c('COCA-COLA'="darkred",
-                     'DORNA'="darkred",
-                     'FANTA'="darkred",
-                     'FUZETEA'="darkred",
-                     'IZVORUL ALB'="darkred",
-                     'POIANA NEGRI'="red",
-                     'SCHWEPPES'="darkred",
-                     'SPRITE'="darkred",
-                     'CAPPY'="darkred",
-                     'PEPSI'="royalblue4",
-                     '7UP'="royalblue4",
-                     'LIPTON'="royalblue4",
-                     'MIRINDA'="royalblue4",
-                     'EVERVESS'="royalblue4",
-                     'MOUNTAIN DEW'="steelblue",
-                     'PRIGAT'="royalblue4",
-                     'BUCOVINA'="khaki4",
-                     'NESTEA'="khaki4",
-                     'TYMBARK'="khaki4",
-                     'AQUA CARPATICA'="darkslategray",
-                     'FRUTTI FRESH'="mediumorchid",
-                     'BORSEC'="orange")
-
-# noquote(paste0("\'",enframe(color.palette.CC,name="brand",value="color") %>%
-# mutate(color=recode(color,royalblue4="#27408b",steelblue="#4682b4",
-# forestgreen="#228b22",mediumorchid="#ba55d3"),
 # css=paste0(".",str_replace(brand," ","_")," { background-color: ",color,"; color: white; }")) %>%
 # pull() %>%unlist() %>%paste(collapse="@"),"\'"))
 

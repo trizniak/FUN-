@@ -2,7 +2,8 @@
 # ======= STAR WARS =======
 
 # ---- SETUP ----
-source("./OUTILS/CONFIG/SETUP.R")
+source("./R/_SETUP.R")
+dir.create("./T E M P")
 
 ## AUX FUN ----
 f.image.uri=function(link,
@@ -11,6 +12,7 @@ f.image.uri=function(link,
   options(download.file.method="libcurl",url.method="libcurl")
   download.file(url=link,
                 destfile=temp.file,
+                method="libcurl",
                 mode="wb")
   magick::image_write(magick::image_resize(
     magick::image_read(temp.file),paste0(size,"x",size)),
@@ -51,7 +53,8 @@ girafe(ggobj=(data.StarWars %>%
                      alpha=0.4) +
            geom_point_interactive(aes(data_id=series,
                                     tooltip=paste0("<img src=\"",
-                                                   Vf.image.uri(poster),"\">"))) +
+                                                   Vf.image.uri(poster),
+                                                   "\">"))) +
          geom_path(data=with(data.StarWars,
                              spline(y=`rotten tomatoes`,
                                     x=plot.order,
@@ -62,20 +65,27 @@ girafe(ggobj=(data.StarWars %>%
          geom_text_interactive(aes(label=movie,
                                    data_id=series,
                                    tooltip=paste0("<img src=\"",
-                                                  Vf.image.uri(poster),"\">")),
+                                                  Vf.image.uri(poster),
+                                                  "\">")),
                    family="Calibri",
                    fontface="italic",
                    hjust=1,
                    nudge_x=-1) +
            annotate("text",
-                    x=50,
-                    y=c(mean(.data$plot.order[.data$series=="Original Trilogy"],na.rm=TRUE),
-                        mean(.data$plot.order[.data$series=="Prequels Trilogy"],na.rm=TRUE)),
-                    label=c("Original Trilogy","Prequels Trilogy"),
+                    x=0,
+                    y=purrr::map(.x=c("Original Trilogy",
+                                      "Prequels Trilogy"),
+                                 .f=~data.StarWars %>%
+                                   filter(series==.x) %>%
+                                   pull(plot.order) %>%
+                                   mean(na.rm=TRUE)) %>%
+                      unlist(),
+                    label=c("Original\nTrilogy",
+                            "Prequels\nTrilogy"),
                     hjust=1,
                     angle=90) +
            annotation_custom(grid::rasterGrob(
-             magick::image_read("./OUTILS/MIX/(Oriza Trizniak).png"),
+             magick::image_read("./outils/(Oriza Trizniak).gif"),
                                               interpolate=TRUE),
                              xmin=-3,
                              xmax=-1,
@@ -94,12 +104,15 @@ girafe(ggobj=(data.StarWars %>%
                                               name=paste0("&#8680;",
                                                           " <span style='color:transparent'>.</span> ",
                                                           "Plot Order  &#8680;"))) +
-         labs(title=paste0("<img src='",StarWars.logo,"' width='69' align='top'/>"),
+         labs(title=paste0("<img src='",
+                           StarWars.logo,
+                           "' width='69' align='top'/>"),
               subtitle="A Winding Road to Greatness (and back)",
               x="Rotten Tomatoes score") +
          theme(plot.title=element_markdown(),
                axis.title.y.left=element_markdown(face="plain"),
                axis.title.y.right=element_blank(),
+               axis.text.y.left=element_blank(),
                axis.text.y.right=element_markdown(),
                axis.line.y.left=element_blank(),
                panel.border=element_blank(),
@@ -118,7 +131,3 @@ girafe(ggobj=(data.StarWars %>%
        width_svg=7,
        height_svg=6)
 
-
-magick::image_annotate(image_read('http://jeroen.github.io/images/tiger.svg'),
-                       "CONFIDENTIAL", size = 30, color = "red", boxcolor = "pink",
-               degrees = 60, location = "+50+100")
