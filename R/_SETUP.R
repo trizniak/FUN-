@@ -32,6 +32,7 @@ pacman::p_load(
   # crosstalk,	#[INTERACTIVE]	https://cran.r-project.org/web/packages/crosstalk/index.html
   glue,		#[OUTILS]	https://cran.r-project.org/web/packages/glue/index.html
   janitor,	#[OUTILS]	https://cran.r-project.org/web/packages/janitor/index.html
+  lubridate,      #[OUTILS]       https://cran.r-project.org/web/packages/lubridate/index.html
   rlang,	#[OUTILS]	https://cran.r-project.org/web/packages/rlang/index.html
   rvest,	#[OUTILS]	https://cran.r-project.org/web/packages/rvest/index.html
   withr,	#[OUTILS]	https://cran.r-project.org/web/packages/withr/index.html
