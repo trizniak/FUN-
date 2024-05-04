@@ -57,7 +57,8 @@ f.gg = function (.url,
   
   .img_date = str_split_i(.file,"\\.",1) %>%
     str_remove_all("[:alpha:]") %>%
-    lubridate::as_date(format="%Y%m%d")
+    lubridate::as_date(format="%Y%m%d") %>%
+    unique()
   
   download.file(url=.img,
                 destfile=paste0(param.folder_dest,
