@@ -13,10 +13,21 @@ cat(paste0("Run : ",
                   "%H:%M")))
 
 
+# ~~~ PARAMS & INFO ~~~ ####
+
+# PARAM : start date ####
+param.start_date = "https://www.girlgeniusonline.com/comic.php?date=20021104"
+
+# PARAM : Destination folder ####
+param.folder_dest = "C:/Users/Public/.BOOKZ/COMIX/Girl Genius/"
+
+# PARAM : Number of comics to download ####
+param.basket_size = 9999
+
 
 # ~~~ AUX FUNS ~~~ ####
 
-# * FUN : TIMING + MESSAGE ####
+# FUN : TIMING + MESSAGE ####
 f.timing = function (.start=section.start,
                      .message,
                      .sep.rows=1) {
@@ -33,66 +44,61 @@ f.timing = function (.start=section.start,
                paste(collapse="")))
 }
 
+# FUN : Download current comic and identify next one's date ####
+f.gg = function (.url,
+                 .blank) {
+  
+  if (length(.url)>0)
+  {.img = read_html(.url) %>%
+    html_elements("img[alt='Comic']") %>%
+    html_attr("src")
+  
+  .file = str_split_i(.img,"/",-1)
+  
+  .img_date = str_split_i(.file,"\\.",1) %>%
+    str_remove_all("[:alpha:]") %>%
+    lubridate::as_date(format="%Y%m%d")
+  
+  download.file(url=.img,
+                destfile=paste0(param.folder_dest,
+                                .file),
+                silent=TRUE,
+                cacheOK=FALSE,
+                method="libcurl",
+                mode="wb")
+  
+  {if (.img_date <= today())
+    return(read_html(.url) %>%
+             html_elements("a[title='The Next Comic']") %>%
+             html_attr("href") %>%
+             unique())}}
+}
+
 
 # ~~~ INIT ~~~ #####
   # [ SECTION START ] ####
   section.start=Sys.time()
   cat(sep="\n",
       "\nINIT\n")
- 
+
 # ... packages ####
 suppressMessages(if (!require("pacman")) utils::install.packages("pacman"))
-pacman::p_load(tidyverse)
+pacman::p_load(tidyverse,rvest)
 
   # [ SECTION END ] ####
   f.timing(.message="Init completed in ")
 
 
-# ~~~ PARAMS & INFO ~~~ ####
-
-# PARAM : root url ####
-param.root_url = "https://www.girlgeniusonline.com/ggmain/strips/"
-
-# PARAM : Destination folder ####
-param.folder_dest="C:/Users/Public/.BOOKZ/COMIX/Girl Genius/"
-
-
-# ~~~ ACTION ~~~ ####
-
-# ACT : Prepare list of images to download ####
-
-  # [ SECTION START ] ####
-  section.start=Sys.time()
-  cat(sep="\n",
-      "\nPreparing list of images to download\n")
-
-list.pix = seq(lubridate::ymd("2002/11/01"),
-               lubridate::ymd("2024/05/01"),
-               "days") %>%
-  stringr::str_remove_all("-") %>%
-  paste0(param.root_url,"ggmain",.,".jpg") %>%
-  .[which(purrr::map(.,
-                     ~!is.null(httr::HEAD(.x)$headers$`content-length`)) %>%
-            unlist)] %>%
-  str_split_i("/",-1)
-
-  # [ SECTION END ] ####
-  f.timing(.message="List of images prepared in ")
- 
-# ACT : Download images ####
+# ~~~ ACTION : Download comics ~~~ ####
 
   # [ SECTION START ] ####
   section.start=Sys.time()
   cat(sep="\n",
       "\nDownloading images\n")
 
-purrr::map(list.pix,
-           ~try(download.file(url=paste0(param.root_url,.x),
-                              destfile=paste0(param.folder_dest,.x),
-                              silent=TRUE,
-                              cacheOK=FALSE,
-                              method="libcurl",
-                              mode="wb")))
+purrr::accumulate(seq(param.basket_size),
+                  f.gg,
+                  .init=param.start_date)
 
   # [ SECTION END ] ####
   f.timing(.message="Download completed in ")
