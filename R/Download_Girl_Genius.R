@@ -13,6 +13,27 @@ cat(paste0("Run : ",
                   "%H:%M")))
 
 
+
+# ~~~ AUX FUNS ~~~ ####
+
+# * FUN : TIMING + MESSAGE ####
+f.timing = function (.start=section.start,
+                     .message,
+                     .sep.rows=1) {
+  cat(sep="\n",
+      paste0(rep("\n",.sep.rows) %>%
+               paste(collapse=""),
+             .message,
+             lubridate::int_diff(c(.start,
+                                   Sys.time())) %>%
+               lubridate::int_length() %>%
+               round() %>%
+               lubridate::seconds_to_period(),
+             rep("\n",.sep.rows) %>%
+               paste(collapse="")))
+}
+
+
 # ~~~ INIT ~~~ #####
   # [ SECTION START ] ####
   section.start=Sys.time()
