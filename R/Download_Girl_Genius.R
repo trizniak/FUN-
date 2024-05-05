@@ -16,7 +16,7 @@ cat(paste0("Run : ",
 # ~~~ PARAMS & INFO ~~~ ####
 
 # PARAM : start date ####
-param.start_date = "https://www.girlgeniusonline.com/comic.php?date=20021104"
+param.start_date = "https://www.girlgeniusonline.com/comic.php?date=20091026"
 
 # PARAM : Destination folder ####
 param.folder_dest = "C:/Users/Public/.BOOKZ/COMIX/Girl Genius/"
@@ -55,18 +55,19 @@ f.gg = function (.url,
   
   .file = str_split_i(.img,"/",-1)
   
-  .img_date = str_split_i(.file,"\\.",1) %>%
-    str_remove_all("[:alpha:]") %>%
+  .img_date = str_split_i(.url,"=",-1) %>%
+    # str_split_i(.file,"\\.",1) %>% str_remove_all("[:alpha:]") %>%
     lubridate::as_date(format="%Y%m%d") %>%
     unique()
   
-  download.file(url=.img,
-                destfile=paste0(param.folder_dest,
-                                .file),
-                silent=TRUE,
-                cacheOK=FALSE,
-                method="libcurl",
-                mode="wb")
+  try({if (!is.na(.img))
+    download.file(url=.img,
+                  destfile=paste0(param.folder_dest,
+                                  .file),
+                  silent=TRUE,
+                  cacheOK=FALSE,
+                  method="libcurl",
+                  mode="wb")})
   
   {if (.img_date <= today())
     return(read_html(.url) %>%
